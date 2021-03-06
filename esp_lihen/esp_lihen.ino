@@ -45,7 +45,7 @@ String mes = "";
 String newmes = "";
 
 const char* ssid = "Kobra_11_v2";
-const char* password = "i5LcnjLJ2x";
+const char* password = "";
 const char* mqtt_server = "10.0.1.13";
 
 //const char* msgtemplate = "[{\"n\":\"teplota\",\"v\":%d}]";
