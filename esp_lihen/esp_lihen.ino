@@ -8,13 +8,13 @@
 
 #define DHTTYPE DHT11
 #define DHTPIN 5
-//#define led 11
+//#define led 13
+#define rele 13
 #define CLK 4
 #define DIO 0
 #define clksw 2
 #define pinB 14
 #define pinA 12
-#define rele 13
 
 char* mood = "auto";
 int intemp;
@@ -36,7 +36,8 @@ long diff;
 float intGoal;
 long steps;
 unsigned long previousMillis = 0;
-const long interval = 3000;
+const long interval = 3000; //3000
+const long loopinterval = 50;
 unsigned long currentMillis;
 int command;
 boolean manOverrideOn;
@@ -45,8 +46,8 @@ String mes = "";
 String newmes = "";
 
 const char* ssid = "Kobra_11_v2";
-const char* password = "";
-const char* mqtt_server = "10.0.1.13";
+const char* password = "i5LcnjLJ2x";
+const char* mqtt_server = "10.0.1.17";
 
 //const char* msgtemplate = "[{\"n\":\"teplota\",\"v\":%d}]";
 const char* msgtemplate = "{\"mqtt_dashboard\":{\"temperature\":%d,\"humidity\":%d";
@@ -102,18 +103,28 @@ void callback(char* topic, byte* payload, unsigned int length) {
 
   Serial.println();
   Serial.println(mes);
+  /*char buffer1[32];r
+  char buffer2[32];
+  topic.toCharArray(buffer1, 32);
+  "topic/tep".toCharArray(buffer2, 32);
+  Serial.println(buffer1);
+  Serial.println(buffer2);*/
+  Serial.println(strcmp(topic, "lihen/tep"));
+  /*if (strcmp(topic, "lihen/tep")) {
+    Serial.println("THEY EQUAL");
+  }*/
 
   int str_len = mes.length() + 1;
   char mes_arr[str_len];
   mes.toCharArray(mes_arr, str_len);
 
-  ms.Target(mes_arr);
+  /*ms.Target(mes_arr);
 
-  //char result = ms.Match("(?<=\"setpoint\":)(.*)(?=,\"t)");
-  char result = ms.Match("nt\":(.*),\"te");
+    //char result = ms.Match("(?<=\"setpoint\":)(.*)(?=,\"t)");
+    char result = ms.Match("nt\":(.*),\"te");
 
-  if (result > 0)
-  {
+    if (result > 0)
+    {
     Serial.print ("Found match at: ");
     Serial.println (ms.MatchStart);
     Serial.print ("Match length: ");
@@ -127,8 +138,12 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println(newmes);
     newmes.replace("nt\":", "");
     newmes.replace(",\"te", "");
-    Serial.println(newmes);
-    float floatmes = newmes.toFloat();
+    Serial.println(newmes);*/
+
+  if (strcmp(topic, "lihen/settep") == 0) {
+    Serial.println(mes);
+
+    float floatmes = mes.toFloat();
     if (manOverrideOff == false && manOverrideOn == false) {
       Serial.print("Cílová teplota: ");
       Serial.println(floatmes);
@@ -136,14 +151,14 @@ void callback(char* topic, byte* payload, unsigned int length) {
     }
   }
 
-  else {
-    Serial.println("No match found for [setpoint]");
-  }
+  /* else {
+     Serial.println("No match found for [setpoint]");
+    }*/
 
-  result = ms.Match("mode\":.*\",\"");
+  //result = ms.Match("mode\":.*\",\"");
 
-  if (result > 0)
-  {
+  /*if (result > 0)
+    {
     Serial.print ("Found match at: ");
     Serial.println (ms.MatchStart);
     Serial.print ("Match length: ");
@@ -157,19 +172,24 @@ void callback(char* topic, byte* payload, unsigned int length) {
     Serial.println(newmes);
     newmes.replace("mode\":\"", "");
     newmes.replace("\",\"", "");
-    Serial.println(newmes);
+    Serial.println(newmes);*/
 
+  if (strcmp(topic, "lihen/setmood") == 0) {
+    newmes = mes;
+    Serial.println("Mood arriveeedddd!!!");
+    Serial.println(mes);
+    Serial.println(newmes);
     if (newmes == "off" || newmes == "cool") {
       Serial.print("Setting off");
-      client.publish("lihen/tep", "{\"mqtt_dashboard\":{\"setpoint\":15}}");
+      //client.publish("lihen/tep", "{\"mqtt_dashboard\":{\"setpoint\":15}}");
       manOverrideOff = true;
       manOverrideOn = false;
       mood = "off";
       state = "false";
     }
-    else if (newmes == "heat" || newmes == "always_on") {
+    else if (newmes == "heat" || newmes == "Zahřívání") {
       Serial.print("Setting heat");
-      client.publish("lihen/tep", "{\"mqtt_dashboard\":{\"setpoint\":15}}");
+      //client.publish("lihen/tep", "{\"mqtt_dashboard\":{\"setpoint\":15}}");
       manOverrideOff = false;
       manOverrideOn = true;
       mood = "heat";
@@ -181,8 +201,8 @@ void callback(char* topic, byte* payload, unsigned int length) {
       manOverrideOn = false;
       mood = "auto";
     }
-    
   }
+
 
   mes = "";
 
@@ -211,8 +231,10 @@ void reconnect() {
       client.publish("outTopic", "hello world");
       // ... and resubscribe
       client.subscribe("inTopic");
-      client.subscribe("lihen/setTep");
+      client.subscribe("lihen/settep");
       client.subscribe("lihen/tep");
+      client.subscribe("lihen/setmood");
+      client.subscribe("lihen/sta");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -314,8 +336,10 @@ void loop() {
     display.showNumberDecEx(intemp, 0b01000000, false);
   }
   digitalWrite(LED_BUILTIN, LOW);
-  delay(2000);
+  delay(loopinterval);
 }
+
+
 
 void checkTemp() {
   digitalWrite(LED_BUILTIN, LOW);
@@ -347,10 +371,28 @@ void checkTemp() {
   fullmsg.toCharArray(full_arr, 150);
   Serial.println(full_arr);
 
-  client.publish("lihen/tep", full_arr);
+  //client.publish("lihen/tep", full_arr);
+
+  char simplemsg[25];
+  String chart = String(t);
+  chart.toCharArray(simplemsg, 25);
+
+  char goalmsg[25];
+  String gmg = String(goalTemp);
+  gmg.toCharArray(goalmsg, 25);
+
+  char hummsg[25];
+  String hmh = String(h);
+  hmh.toCharArray(hummsg, 25);
+  
+  client.publish("lihen/tep", simplemsg);
+  client.publish("lihen/hum", hummsg);
+  client.publish("lihen/mood", mood);
+  client.publish("lihen/settep", goalmsg);
+  //char tet[6] = "22";
+  //client.publish("lihen/tep", tet);
 
 
-  //client.publish("lihen/tep", (int) t);
   //client.publish("lihen/vlh", (int) h);
 
   //temp = sensors.getTempCByIndex(0);
@@ -371,7 +413,7 @@ void checkTemp() {
       mood = "auto";
       state = "false";
     }
-    else {
+    else if (t <= goalTemp - 1){
       //digitalWrite(led, HIGH);
       digitalWrite(rele, HIGH);
       mood = "auto";
